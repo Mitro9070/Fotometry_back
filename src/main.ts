@@ -38,9 +38,11 @@ async function bootstrap() {
     .setTitle('Fotometry Backend API')
     .setDescription('API для системы сбора, хранения и обработки фотометрической информации об ИСЗ')
     .setVersion('1.0')
-    .addTag('Ingest', 'Загрузка и обработка данных')
-    .addTag('Observations', 'Управление наблюдениями')
-    .addTag('Analytics', 'Аналитика и статистика')
+    .addTag('Satellites - Каталог', 'Поиск и получение данных из каталога TLE спутников')
+    .addTag('Satellites - База данных', 'Управление спутниками в базе данных')
+    .addTag('Ingest - Загрузка данных', 'Загрузка и обработка файлов наблюдений')
+    .addTag('Observations - Наблюдения', 'Управление наблюдениями и данными')
+    .addTag('Analytics - Аналитика', 'Аналитика и статистика по наблюдениям')
     .build();
 
   const document = SwaggerModule.createDocument(app, config);

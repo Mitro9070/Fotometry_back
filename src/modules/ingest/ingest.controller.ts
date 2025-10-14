@@ -5,7 +5,7 @@ import { IngestService } from './ingest.service';
 import { ObservationIngestDto } from './dto/observation-ingest.dto';
 import { IngestResultDto } from './dto/ingest-result.dto';
 
-@ApiTags('ingest')
+@ApiTags('Ingest - Загрузка данных')
 @Controller('ingest')
 export class IngestController {
   constructor(private readonly ingestService: IngestService) {}
@@ -34,7 +34,7 @@ export class IngestController {
       }
     },
   }))
-  @ApiOperation({ summary: 'Загрузить файл наблюдения' })
+  @ApiOperation({ summary: 'Загрузить файл наблюдения с параметрами спутника' })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
     schema: {
@@ -45,6 +45,18 @@ export class IngestController {
           format: 'binary',
           description: 'Файл наблюдения (.E)',
         },
+        satelliteData: {
+          type: 'string',
+          description: 'JSON с параметрами спутника (TLE данные)',
+        },
+        position: {
+          type: 'string',
+          description: 'JSON с данными о позиции наблюдателя',
+        },
+        source: {
+          type: 'string',
+          description: 'Источник данных',
+        },
       },
     },
   })
@@ -52,11 +64,37 @@ export class IngestController {
   @ApiResponse({ status: 400, description: 'Ошибка парсинга файла' })
   @ApiResponse({ status: 409, description: 'Наблюдение уже существует' })
   @ApiResponse({ status: 500, description: 'Ошибка загрузки файла' })
-  async uploadFile(@UploadedFile() file: Express.Multer.File): Promise<IngestResultDto> {
+  async uploadFile(
+    @UploadedFile() file: Express.Multer.File,
+    @Body('satelliteData') satelliteDataStr?: string,
+    @Body('position') positionStr?: string,
+    @Body('source') source?: string,
+  ): Promise<IngestResultDto> {
     if (!file) {
       throw new Error('Файл не был загружен');
     }
-    return this.ingestService.ingestFromFile(file);
+
+    // Парсим JSON данные если они предоставлены
+    let satelliteData = null;
+    let position = null;
+
+    try {
+      if (satelliteDataStr && satelliteDataStr !== '{}') {
+        satelliteData = JSON.parse(satelliteDataStr);
+      }
+    } catch (e) {
+      throw new Error('Неверный формат satelliteData JSON');
+    }
+
+    try {
+      if (positionStr && positionStr !== '{}') {
+        position = JSON.parse(positionStr);
+      }
+    } catch (e) {
+      throw new Error('Неверный формат position JSON');
+    }
+
+    return this.ingestService.ingestFromFile(file, satelliteData, position, source);
   }
 
   @Post('json')

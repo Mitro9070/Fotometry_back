@@ -50,7 +50,12 @@ export class IngestService {
     private satellitesService: SatellitesService,
   ) {}
 
-  async ingestFromFile(file: Express.Multer.File): Promise<IngestResultDto> {
+  async ingestFromFile(
+    file: Express.Multer.File,
+    satelliteData?: any,
+    position?: any,
+    source?: string,
+  ): Promise<IngestResultDto> {
     if (!file) {
       throw new BadRequestException('Файл не предоставлен');
     }
@@ -64,6 +69,58 @@ export class IngestService {
       const parsedData = parser.parse(file.buffer, {
         originalName: file.originalname,
       });
+
+      // Обогащаем данные параметрами спутника если они предоставлены
+      if (satelliteData) {
+        this.logger.log('Обогащение данных параметрами спутника из каталога', satelliteData);
+        
+        // Если есть TLE данные, сохраняем или обновляем спутник
+        if (satelliteData.line1 && satelliteData.line2 && satelliteData.noradId) {
+          try {
+            // Пытаемся найти спутник по NORAD ID
+            let satellite = await this.satellitesService.findByNoradId(satelliteData.noradId);
+            
+            if (!satellite) {
+              // Создаем новый спутник с TLE данными
+              satellite = await this.satellitesService.createFromTLE(
+                satelliteData.name || `Satellite ${satelliteData.noradId}`,
+                satelliteData.noradId,
+                satelliteData.line1,
+                satelliteData.line2,
+              );
+              this.logger.log(`Создан новый спутник из каталога: ${satellite.id}`);
+            } else {
+              // Обновляем TLE данные существующего спутника
+              await this.satellitesService.updateTleDataFromLines(
+                satellite.id,
+                satelliteData.line1,
+                satelliteData.line2,
+              );
+              this.logger.log(`Обновлены TLE данные спутника: ${satellite.id}`);
+            }
+            
+            // Добавляем satelliteId в parsedData если его нет
+            if (!parsedData.satelliteId) {
+              parsedData.satelliteId = satellite.id;
+            }
+          } catch (error) {
+            this.logger.logError(error, 'Ошибка при сохранении спутника из каталога');
+          }
+        }
+      }
+
+      // Добавляем информацию о позиции если она предоставлена
+      if (position && parsedData.station) {
+        parsedData.station = {
+          ...parsedData.station,
+          ...position,
+        };
+      }
+
+      // Добавляем источник данных
+      if (source) {
+        parsedData.source = source;
+      }
 
       return this.ingestFromJson(parsedData);
     } catch (error) {

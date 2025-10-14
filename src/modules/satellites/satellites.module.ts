@@ -3,15 +3,16 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { HttpModule } from '@nestjs/axios';
 import { Satellite } from '../../entities/satellite.entity';
 import { SatellitesService } from './satellites.service';
-import { SatellitesController } from './satellites.controller';
+import { SatellitesController, SatellitesCatalogController } from './satellites.controller';
+import { CatalogService } from './catalog.service';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Satellite]),
     HttpModule,
   ],
-  controllers: [SatellitesController],
-  providers: [SatellitesService],
-  exports: [SatellitesService],
+  controllers: [SatellitesCatalogController, SatellitesController],
+  providers: [SatellitesService, CatalogService],
+  exports: [SatellitesService, CatalogService],
 })
 export class SatellitesModule {}

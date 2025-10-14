@@ -244,4 +244,14 @@ export class ObservationIngestDto {
   @IsOptional()
   @IsNumber()
   partitionTimeSeconds?: number;
+
+  @ApiProperty({ description: 'ID спутника в базе данных', required: false })
+  @IsOptional()
+  @IsNumber()
+  satelliteId?: number;
+
+  @ApiProperty({ description: 'Источник данных', required: false })
+  @IsOptional()
+  @IsString()
+  source?: string;
 }

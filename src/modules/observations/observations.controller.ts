@@ -4,7 +4,7 @@ import { ObservationsService } from './observations.service';
 import { ObservationQueryDto } from './dto/observation-query.dto';
 import { ObservationListItemDto, ObservationDetailDto, PagedResultDto } from './dto/observation-response.dto';
 
-@ApiTags('Observations')
+@ApiTags('Observations - Наблюдения')
 @Controller('observations')
 export class ObservationsController {
   constructor(private readonly observationsService: ObservationsService) {}

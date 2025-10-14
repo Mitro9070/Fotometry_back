@@ -474,4 +474,159 @@ export class SatellitesService {
       throw error;
     }
   }
+
+  /**
+   * Создание спутника из TLE данных
+   */
+  async createFromTLE(
+    name: string,
+    noradId: string,
+    line1: string,
+    line2: string,
+  ): Promise<Satellite> {
+    try {
+      // Парсим TLE данные
+      const tleData = this.parseTLE(line1, line2);
+      
+      // Создаем спутник
+      const satellite = this.satelliteRepository.create({
+        satelliteName: name,
+        noradId: noradId,
+        tleLine1: line1,
+        tleLine2: line2,
+        tleEpoch: tleData.epoch,
+        inclinationDeg: tleData.inclination,
+        raOfAscNode: tleData.raan,
+        eccentricity: tleData.eccentricity,
+        argOfPericenter: tleData.argOfPerigee,
+        meanAnomaly: tleData.meanAnomaly,
+        meanMotion: tleData.meanMotion,
+        lastUpdated: new Date(),
+      });
+
+      // Вычисляем орбитальные элементы
+      const orbitalElements = this.calculateOrbitalElementsFromTLE(tleData);
+      Object.assign(satellite, orbitalElements);
+
+      return await this.satelliteRepository.save(satellite);
+    } catch (error) {
+      this.logger.error(`Ошибка при создании спутника из TLE:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Обновление TLE данных по строкам
+   */
+  async updateTleDataFromLines(
+    satelliteId: number,
+    line1: string,
+    line2: string,
+  ): Promise<Satellite> {
+    try {
+      const satellite = await this.satelliteRepository.findOne({
+        where: { id: satelliteId },
+      });
+
+      if (!satellite) {
+        throw new Error(`Спутник с ID ${satelliteId} не найден`);
+      }
+
+      // Парсим TLE данные
+      const tleData = this.parseTLE(line1, line2);
+
+      // Обновляем TLE данные
+      satellite.tleLine1 = line1;
+      satellite.tleLine2 = line2;
+      satellite.tleEpoch = tleData.epoch;
+      satellite.inclinationDeg = tleData.inclination;
+      satellite.raOfAscNode = tleData.raan;
+      satellite.eccentricity = tleData.eccentricity;
+      satellite.argOfPericenter = tleData.argOfPerigee;
+      satellite.meanAnomaly = tleData.meanAnomaly;
+      satellite.meanMotion = tleData.meanMotion;
+      satellite.lastUpdated = new Date();
+
+      // Вычисляем орбитальные элементы
+      const orbitalElements = this.calculateOrbitalElementsFromTLE(tleData);
+      Object.assign(satellite, orbitalElements);
+
+      return await this.satelliteRepository.save(satellite);
+    } catch (error) {
+      this.logger.error(`Ошибка при обновлении TLE данных:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Парсинг TLE строк
+   */
+  private parseTLE(line1: string, line2: string): any {
+    try {
+      // Парсим эпоху из line1
+      const epochYear = parseInt(line1.substring(18, 20));
+      const epochDay = parseFloat(line1.substring(20, 32));
+      const fullYear = epochYear < 57 ? 2000 + epochYear : 1900 + epochYear;
+      const epoch = new Date(fullYear, 0, 1);
+      epoch.setDate(epochDay);
+
+      // Парсим параметры орбиты из line2
+      const inclination = parseFloat(line2.substring(8, 16).trim());
+      const raan = parseFloat(line2.substring(17, 25).trim());
+      const eccentricityStr = line2.substring(26, 33).trim();
+      const eccentricity = parseFloat('0.' + eccentricityStr);
+      const argOfPerigee = parseFloat(line2.substring(34, 42).trim());
+      const meanAnomaly = parseFloat(line2.substring(43, 51).trim());
+      const meanMotion = parseFloat(line2.substring(52, 63).trim());
+
+      return {
+        epoch,
+        inclination,
+        raan,
+        eccentricity,
+        argOfPerigee,
+        meanAnomaly,
+        meanMotion,
+      };
+    } catch (error) {
+      this.logger.error('Ошибка при парсинге TLE:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Вычисление орбитальных элементов из TLE
+   */
+  private calculateOrbitalElementsFromTLE(tleData: any): Partial<Satellite> {
+    try {
+      const mu = 398600.4418; // Гравитационный параметр Земли (км³/с²)
+      const meanMotion = tleData.meanMotion;
+      const eccentricity = tleData.eccentricity;
+
+      if (meanMotion && eccentricity !== undefined) {
+        // Период обращения (минуты)
+        const periodMin = 1440 / meanMotion;
+
+        // Большая полуось (км)
+        const n = meanMotion * 2 * Math.PI / 86400; // среднее движение в рад/с
+        const semiMajorAxisKm = Math.pow(mu / (n * n), 1 / 3);
+
+        // Апогей и перигей (км)
+        const apogeeKm = semiMajorAxisKm * (1 + eccentricity) - 6378.137; // Вычитаем радиус Земли
+        const perigeeKm = semiMajorAxisKm * (1 - eccentricity) - 6378.137;
+
+        return {
+          periodMin,
+          semiMajorAxisKm,
+          apogeeKm,
+          perigeeKm,
+        };
+      }
+
+      return {};
+    } catch (error) {
+      this.logger.warn(`Ошибка при вычислении орбитальных элементов:`, error.message);
+      return {};
+    }
+  }
 }
