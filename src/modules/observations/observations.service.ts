@@ -37,24 +37,33 @@ export class ObservationsService {
 
   async getList(query: ObservationQueryDto) {
     const queryBuilder = this.observationRepository.createQueryBuilder('obs')
-      .leftJoinAndSelect('obs.filters', 'filters');
+      .leftJoinAndSelect('obs.filters', 'filters')
+      .leftJoinAndSelect('obs.satellite', 'satellite');
 
-    // Применяем фильтры
-    if (query.stationCode) {
-      queryBuilder.andWhere('obs.pointCode = :stationCode', { stationCode: query.stationCode });
-    }
+      // Применяем фильтры
+      if (query.stationCode) {
+        queryBuilder.andWhere('obs.pointCode = :stationCode', { stationCode: query.stationCode });
+      }
 
-    if (query.dateFrom) {
-      queryBuilder.andWhere('obs.dateObs >= :dateFrom', { dateFrom: query.dateFrom });
-    }
+      if (query.dateFrom) {
+        queryBuilder.andWhere('obs.dateObs >= :dateFrom', { dateFrom: query.dateFrom });
+      }
 
-    if (query.dateTo) {
-      queryBuilder.andWhere('obs.dateObs <= :dateTo', { dateTo: query.dateTo });
-    }
+      if (query.dateTo) {
+        queryBuilder.andWhere('obs.dateObs <= :dateTo', { dateTo: query.dateTo });
+      }
 
-    if (query.obsNumber) {
-      queryBuilder.andWhere('obs.obsNumber = :obsNumber', { obsNumber: query.obsNumber });
-    }
+      if (query.obsNumber) {
+        queryBuilder.andWhere('obs.obsNumber = :obsNumber', { obsNumber: query.obsNumber });
+      }
+
+      if (query.satelliteId) {
+        queryBuilder.andWhere('obs.satelliteId = :satelliteId', { satelliteId: query.satelliteId });
+      }
+
+      if (query.noradId) {
+        queryBuilder.andWhere('satellite.noradId = :noradId', { noradId: query.noradId });
+      }
 
     // Применяем сортировку
     if (query.sortBy) {
@@ -88,6 +97,7 @@ export class ObservationsService {
         utcOffsetHours: obs.timeOffsetUtc,
         filters: obs.filters?.map(filter => filter.filterCode) || [],
         satelliteNumber: obs.satelliteNumber,
+        satelliteId: obs.satelliteId, // Добавляем satelliteId
       })),
       pagination: {
         page,
@@ -123,6 +133,8 @@ export class ObservationsService {
       averagingPeriodSec: observation.avgPeriod,
       etalonDurationSec: observation.etalonDuration,
       etalonSignal: observation.etalonSignal,
+      satelliteNumber: observation.satelliteNumber,
+      satelliteId: observation.satelliteId, // Добавляем satelliteId
       coordinates: observation.coordinates?.map(coord => ({
         hourAngle: coord.hourAngle,
         deltaDeg: coord.delta,

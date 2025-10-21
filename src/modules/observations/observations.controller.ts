@@ -10,7 +10,18 @@ export class ObservationsController {
   constructor(private readonly observationsService: ObservationsService) {}
 
   @Get()
-  @ApiOperation({ summary: 'Получить список наблюдений с фильтрацией и пагинацией' })
+  @ApiOperation({ 
+    summary: 'Получить список наблюдений с фильтрацией и пагинацией',
+    description: 'Поддерживает фильтрацию по станции, датам, номеру наблюдения, спутнику (по ID или NORAD ID)'
+  })
+  @ApiQuery({ name: 'stationCode', required: false, description: 'Код станции наблюдения' })
+  @ApiQuery({ name: 'dateFrom', required: false, description: 'Дата начала (YYYY-MM-DD)' })
+  @ApiQuery({ name: 'dateTo', required: false, description: 'Дата окончания (YYYY-MM-DD)' })
+  @ApiQuery({ name: 'obsNumber', required: false, description: 'Номер наблюдения' })
+  @ApiQuery({ name: 'satelliteId', required: false, description: 'ID спутника в БД', type: Number })
+  @ApiQuery({ name: 'noradId', required: false, description: 'NORAD ID спутника', example: '28158' })
+  @ApiQuery({ name: 'page', required: false, description: 'Номер страницы', type: Number, example: 1 })
+  @ApiQuery({ name: 'limit', required: false, description: 'Количество на странице', type: Number, example: 50 })
   @ApiResponse({
     status: 200,
     description: 'Список наблюдений',

@@ -172,13 +172,14 @@ export class IngestService {
       avgPeriod: data.averagingPeriodSec || null,
       satelliteNumber: data.satelliteNumber || null,
       partitionTimeSeconds: data.partitionTimeSeconds || null,
+      satelliteId: data.satelliteId || null, // Устанавливаем satelliteId если он уже есть
     });
 
     const savedObservation = await this.observationRepository.save(observation);
     this.logger.log(`Создано наблюдение с ID: ${savedObservation.id} (${uniqueKey})`);
 
-    // Автоматически получаем данные спутника из каталога NORAD
-    if (data.satelliteNumber) {
+    // Автоматически получаем данные спутника из каталога NORAD если satelliteId еще не установлен
+    if (!savedObservation.satelliteId && data.satelliteNumber) {
       try {
         this.logger.log(`Получаем данные спутника ${data.satelliteNumber} из каталога NORAD...`);
         const satellite = await this.satellitesService.createOrUpdateFromNorad(data.satelliteNumber);
@@ -192,6 +193,11 @@ export class IngestService {
         this.logger.logError(error, `Ошибка при получении данных спутника ${data.satelliteNumber}`);
         // Не прерываем процесс ингеста, если не удалось получить данные спутника
       }
+    }
+    
+    // Логируем информацию о связи со спутником
+    if (savedObservation.satelliteId) {
+      this.logger.log(`Наблюдение ${savedObservation.id} связано со спутником ID: ${savedObservation.satelliteId}`);
     }
 
     // Сохраняем координаты

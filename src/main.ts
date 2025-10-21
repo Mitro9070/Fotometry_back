@@ -49,10 +49,33 @@ async function bootstrap() {
   SwaggerModule.setup('api/docs', app, document);
 
   const port = 5000;
-  await app.listen(port);
   
-  logger.log(`🚀 Приложение запущено на порту ${port}`, 'Bootstrap');
-  logger.log(`📚 Swagger документация доступна по адресу: http://localhost:${port}/api/docs`, 'Bootstrap');
+  try {
+    logger.log(`📡 Попытка запуска сервера на порту ${port}...`, 'Bootstrap');
+    logger.log(`   Host: 0.0.0.0`, 'Bootstrap');
+    
+    const server = await app.listen(port, '0.0.0.0');
+    
+    logger.log(`✅ Server.listen() выполнен успешно`, 'Bootstrap');
+    logger.log(`   Server address: ${JSON.stringify(server.address())}`, 'Bootstrap');
+    logger.log(`🚀 Приложение запущено на порту ${port}`, 'Bootstrap');
+    logger.log(`📚 Swagger документация доступна по адресу: http://localhost:${port}/api/docs`, 'Bootstrap');
+    
+    // Проверка что порт действительно слушается
+    setTimeout(() => {
+      logger.log(`🔍 Проверка через 2 секунды...`, 'Bootstrap');
+    }, 2000);
+    
+  } catch (error) {
+    logger.error(`💥💥💥 КРИТИЧЕСКАЯ ОШИБКА ПРИ ЗАПУСКЕ 💥💥💥`, '', 'Bootstrap');
+    logger.error(`Ошибка: ${error.message}`, '', 'Bootstrap');
+    logger.error(`Стек: ${error.stack}`, '', 'Bootstrap');
+    console.error('💥💥💥 ОШИБКА BOOTSTRAP:', error);
+    process.exit(1);
+  }
 }
 
-bootstrap();
+bootstrap().catch((error) => {
+  console.error('💥💥💥 ОШИБКА BOOTSTRAP:', error);
+  process.exit(1);
+});

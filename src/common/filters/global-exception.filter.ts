@@ -34,12 +34,6 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       {
         method: request.method,
         url: request.url,
-        headers: request.headers,
-        body: request.body,
-        query: request.query,
-        params: request.params,
-        userAgent: request.get('user-agent'),
-        ip: request.ip,
         status,
         message,
       }

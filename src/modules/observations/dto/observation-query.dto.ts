@@ -25,6 +25,15 @@ export class ObservationQueryDto {
   @IsOptional()
   @Transform(({ value }) => parseInt(value))
   @IsNumber()
+  satelliteId?: number;
+
+  @IsOptional()
+  @IsString()
+  noradId?: string;
+
+  @IsOptional()
+  @Transform(({ value }) => parseInt(value))
+  @IsNumber()
   @Min(1)
   @Max(1000)
   limit?: number = 50;
